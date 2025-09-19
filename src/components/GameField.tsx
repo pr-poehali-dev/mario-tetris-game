@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import Icon from '@/components/ui/icon';
+import { useAudio } from '@/hooks/useAudio';
 
 interface GameBlock {
   x: number;
@@ -25,6 +26,7 @@ const COIN_YELLOW = '#FFD700';
 const PIPE_GREEN = '#22C55E';
 
 export const GameField: React.FC<GameFieldProps> = ({ onPause, onGameOver }) => {
+  const { playSound, initAudioContext } = useAudio();
   const [gameField, setGameField] = useState<(GameBlock | null)[][]>(
     Array(FIELD_HEIGHT).fill(null).map(() => Array(FIELD_WIDTH).fill(null))
   );
@@ -50,6 +52,7 @@ export const GameField: React.FC<GameFieldProps> = ({ onPause, onGameOver }) => 
   }, []);
 
   const moveMario = useCallback((direction: 'left' | 'right' | 'jump') => {
+    initAudioContext();
     setMarioPosition(prev => {
       const newPos = { ...prev };
       
@@ -61,6 +64,7 @@ export const GameField: React.FC<GameFieldProps> = ({ onPause, onGameOver }) => 
           if (newPos.x < FIELD_WIDTH - 1) newPos.x++;
           break;
         case 'jump':
+          playSound('jump');
           if (newPos.y > 0) newPos.y -= 2;
           setTimeout(() => {
             setMarioPosition(p => ({ ...p, y: Math.min(p.y + 2, FIELD_HEIGHT - 2) }));
@@ -70,7 +74,7 @@ export const GameField: React.FC<GameFieldProps> = ({ onPause, onGameOver }) => 
       
       return newPos;
     });
-  }, []);
+  }, [initAudioContext, playSound]);
 
   const clearLines = useCallback(() => {
     const newField = [...gameField];
@@ -86,6 +90,7 @@ export const GameField: React.FC<GameFieldProps> = ({ onPause, onGameOver }) => 
     }
     
     if (clearedCount > 0) {
+      playSound('line-clear');
       setGameField(newField);
       setLinesCleared(prev => prev + clearedCount);
       setScore(prev => prev + clearedCount * 100 * level);
@@ -110,8 +115,10 @@ export const GameField: React.FC<GameFieldProps> = ({ onPause, onGameOver }) => 
           // Check for collision with Mario
           if (currentPiece.x === marioPosition.x && currentPiece.y === marioPosition.y) {
             if (currentPiece.type === 'coin') {
+              playSound('coin');
               setScore(prev => prev + 50);
             } else if (currentPiece.type === 'enemy') {
+              playSound('game-over');
               onGameOver(score);
               return;
             }
@@ -146,6 +153,7 @@ export const GameField: React.FC<GameFieldProps> = ({ onPause, onGameOver }) => 
           moveMario('jump');
           break;
         case 'Escape':
+          playSound('pause');
           onPause();
           break;
       }

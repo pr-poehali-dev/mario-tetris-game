@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { GameField } from '@/components/GameField';
 import Icon from '@/components/ui/icon';
+import { useAudio } from '@/hooks/useAudio';
 
 type GameScreen = 'menu' | 'game' | 'leaderboard' | 'instructions' | 'pause' | 'gameOver';
 
@@ -15,6 +16,7 @@ interface Score {
 }
 
 function Index() {
+  const { playSound, playBackgroundMusic, stopBackgroundMusic, isEnabled, toggleAudio } = useAudio();
   const [currentScreen, setCurrentScreen] = useState<GameScreen>('menu');
   const [currentScore, setCurrentScore] = useState(0);
   const [playerName, setPlayerName] = useState('');
@@ -29,10 +31,12 @@ function Index() {
   const handleGameOver = (score: number) => {
     setCurrentScore(score);
     setCurrentScreen('gameOver');
+    stopBackgroundMusic();
   };
 
   const saveScore = () => {
     if (playerName.trim()) {
+      playSound('menu-select');
       const newScore: Score = {
         name: playerName.trim(),
         score: currentScore,
@@ -70,14 +74,20 @@ function Index() {
           {/* Menu Buttons */}
           <div className="space-y-3">
             <Button 
-              onClick={() => setCurrentScreen('game')}
+              onClick={() => {
+                playSound('menu-select');
+                setCurrentScreen('game');
+              }}
               className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-3 text-lg border-2 border-red-700 shadow-lg"
             >
               🎮 ИГРАТЬ
             </Button>
             
             <Button 
-              onClick={() => setCurrentScreen('leaderboard')}
+              onClick={() => {
+                playSound('menu-select');
+                setCurrentScreen('leaderboard');
+              }}
               variant="outline"
               className="w-full border-2 border-yellow-500 text-yellow-700 hover:bg-yellow-50 font-bold py-3"
             >
@@ -85,11 +95,26 @@ function Index() {
             </Button>
             
             <Button 
-              onClick={() => setCurrentScreen('instructions')}
+              onClick={() => {
+                playSound('menu-select');
+                setCurrentScreen('instructions');
+              }}
               variant="outline"
               className="w-full border-2 border-blue-500 text-blue-700 hover:bg-blue-50 font-bold py-3"
             >
               📋 ПРАВИЛА ИГРЫ
+            </Button>
+            
+            <Button 
+              onClick={toggleAudio}
+              variant="outline"
+              className={`w-full border-2 font-bold py-2 text-sm ${
+                isEnabled 
+                  ? 'border-green-500 text-green-700 hover:bg-green-50' 
+                  : 'border-red-500 text-red-700 hover:bg-red-50'
+              }`}
+            >
+              {isEnabled ? '🔊 ЗВУК ВКЛ' : '🔇 ЗВУК ВЫКЛ'}
             </Button>
           </div>
         </div>
@@ -277,6 +302,26 @@ function Index() {
       </DialogContent>
     </Dialog>
   );
+
+  // Background music for different screens
+  useEffect(() => {
+    if (!isEnabled) return;
+    
+    // Simple 8-bit melodies using data URLs would go here
+    // For now, we'll use Web Audio API tones
+    const playBackgroundTune = () => {
+      if (currentScreen === 'menu') {
+        // Play menu music - we'll use the existing sound system
+        // No continuous background music for now to keep it simple
+      }
+    };
+    
+    playBackgroundTune();
+    
+    return () => {
+      stopBackgroundMusic();
+    };
+  }, [currentScreen, isEnabled, stopBackgroundMusic]);
 
   return (
     <div className="font-sans">
